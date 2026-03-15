@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="theme-color" content="#0a1628"/>
+  <title>Games</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0a1628; --surface: #111d35; --border: #1e2f4d;
+      --accent2: #00e5ff; --text: #e0f7fa; --muted: #546e7a;
+      --glow: 0 0 32px rgba(0,229,255,0.25);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; }
+    body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; z-index: 0; }
+    header { width: 100%; max-width: 480px; padding: 40px 24px 28px; position: relative; z-index: 1; }
+    a.back { display: inline-flex; align-items: center; gap: 6px; font-size: .7rem; letter-spacing: .15em; color: var(--muted); text-decoration: none; margin-bottom: 16px; transition: color .2s; }
+    a.back:hover { color: var(--accent2); }
+    header h1 { font-family: 'Syne', sans-serif; font-size: clamp(1.8rem,7vw,2.4rem); font-weight: 800; color: var(--accent2); text-shadow: var(--glow); animation: fadeIn .5s ease both; }
+    header p { margin-top: 8px; font-size: .72rem; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; animation: fadeIn .5s .1s ease both; }
+    #tools { width: 100%; max-width: 480px; padding: 0 24px 48px; display: flex; flex-direction: column; gap: 14px; position: relative; z-index: 1; }
+    .tool-card { display: flex; align-items: center; gap: 18px; padding: 20px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; text-decoration: none; color: var(--text); transition: border-color .2s, transform .15s, box-shadow .2s; position: relative; overflow: hidden; animation: slideUp .4s .05s ease both; }
+    .tool-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,229,255,0.04) 0%, transparent 60%); opacity: 0; transition: opacity .2s; }
+    .tool-card:hover { border-color: var(--accent2); box-shadow: 0 0 24px rgba(0,229,255,.12), 0 4px 20px rgba(0,0,0,.3); transform: translateY(-2px); }
+    .tool-card:hover::before { opacity: 1; }
+    .tool-card:active { transform: scale(.98); }
+    .tool-icon { font-size: 2rem; width: 52px; height: 52px; background: rgba(0,229,255,.07); border: 1px solid var(--border); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background .2s, border-color .2s; }
+    .tool-card:hover .tool-icon { background: rgba(0,229,255,.12); border-color: rgba(0,229,255,.3); }
+    .tool-info { flex: 1; }
+    .tool-name { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 800; letter-spacing: .04em; }
+    .tool-desc { font-size: .68rem; letter-spacing: .08em; color: var(--muted); margin-top: 3px; text-transform: uppercase; }
+    .tool-arrow { color: var(--accent2); font-size: 1.1rem; opacity: 0; transform: translateX(-6px); transition: opacity .2s, transform .2s; }
+    .tool-card:hover .tool-arrow { opacity: 1; transform: translateX(0); }
+    footer { margin-top: auto; padding: 0 24px 24px; font-size: .62rem; color: var(--muted); letter-spacing: .12em; text-align: center; position: relative; z-index: 1; }
+    @keyframes slideUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  </style>
+</head>
+<body>
+<header>
+  <a class="back" href="index.html">← BACK TO TOOLS</a>
+  <h1>🎮 GAMES</h1>
+  <p>Play &amp; challenge yourself</p>
+</header>
+<div id="tools">
+  <a class="tool-card" href="spot-difference.html">
+    <div class="tool-icon">🃏</div>
+    <div class="tool-info">
+      <div class="tool-name">JOGO DA MEMÓRIA</div>
+      <div class="tool-desc">Flip &amp; match pairs · 1 or 2 players · animals</div>
+    </div>
+    <div class="tool-arrow">→</div>
+  </a>
+</div>
+<footer>KEEP · PLAYING · COOL · GAMES</footer>
+</body>
+</html>
