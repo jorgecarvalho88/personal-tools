@@ -130,26 +130,25 @@
     /* BACK face */
     .card-back-face {
       background: var(--card-back);
-      display:flex; align-items:center; justify-content:center;
-      /* decorative pattern */
-      background-image:
-        repeating-linear-gradient(45deg, rgba(0,229,255,0.04) 0px, rgba(0,229,255,0.04) 1px, transparent 1px, transparent 8px),
-        repeating-linear-gradient(-45deg, rgba(0,229,255,0.04) 0px, rgba(0,229,255,0.04) 1px, transparent 1px, transparent 8px);
+      overflow: hidden;
     }
-    .card-back-face .card-logo {
-      font-size: 1.2rem;
-      opacity:.5;
-      user-select:none;
+    .card-back-face svg {
+      position:absolute; inset:0; width:100%; height:100%;
     }
 
     /* FRONT face */
     .card-front-face {
       transform: rotateY(180deg);
       background:#0d1f38;
+      overflow:hidden;
+      position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
     }
     .card-front-face img {
-      display:block; width:100%; height:100%;
-      object-fit:cover; border-radius:6px;
+      position:absolute; inset:0;
+      width:100%; height:100%;
+      object-fit:cover; object-position:center;
+      display:block;
     }
     .card-front-face .card-emoji {
       display:flex; align-items:center; justify-content:center;
@@ -172,12 +171,6 @@
       50%  { transform:rotateY(180deg) scale(1.08); }
       100% { transform:rotateY(180deg) scale(1); }
     }
-
-    /* small size logo adjusts */
-    .card.small .card-back-face .card-logo { font-size:.8rem; }
-    .card.small .card-front-face .card-emoji { font-size:1.1rem; }
-    .card.tiny  .card-back-face .card-logo { font-size:.5rem; }
-    .card.tiny  .card-front-face .card-emoji { font-size:.75rem; }
 
     /* ══ END SCREEN ══ */
     #end-screen { max-width:480px; padding:48px 20px; gap:16px; text-align:center; }
@@ -217,17 +210,21 @@
   <div class="setup-section">
     <label>Grid size</label>
     <div class="option-group" id="grid-opts">
-      <button class="opt-btn selected" data-grid="6">
-        <span class="opt-icon">🔲</span>6×6
+      <button class="opt-btn selected" data-grid="4">
+        <span class="opt-icon">🔲</span>4×4
+        <span class="opt-sub">8 pairs</span>
+      </button>
+      <button class="opt-btn" data-grid="5">
+        <span class="opt-icon">🔳</span>5×5
+        <span class="opt-sub">12 pairs</span>
+      </button>
+      <button class="opt-btn" data-grid="6">
+        <span class="opt-icon">⬛</span>6×6
         <span class="opt-sub">18 pairs</span>
       </button>
-      <button class="opt-btn" data-grid="10">
-        <span class="opt-icon">🔳</span>10×10
-        <span class="opt-sub">50 pairs</span>
-      </button>
-      <button class="opt-btn" data-grid="15">
-        <span class="opt-icon">⬛</span>15×15
-        <span class="opt-sub">112 pairs</span>
+      <button class="opt-btn" data-grid="8">
+        <span class="opt-icon">🟫</span>8×8
+        <span class="opt-sub">32 pairs</span>
       </button>
     </div>
   </div>
@@ -341,7 +338,7 @@ const ANIMALS = [
 ];
 
 // ══ STATE ══
-let cfg = { grid:6, players:1 };
+let cfg = { grid:4, players:1 };
 let G = {}; // game state
 
 // ══ SETUP BINDINGS ══
@@ -434,14 +431,14 @@ function buildAnimalPool(pairs) {
 function buildGrid() {
   const N = G.N;
   const tileSize = calcTileSize(N);
-  const gap = N <= 6 ? 6 : N <= 10 ? 5 : 4;
+  const gap = N <= 6 ? 6 : 5;
 
   const grid = document.getElementById('grid');
   grid.style.gridTemplateColumns = `repeat(${N}, ${tileSize}px)`;
   grid.style.gap = `${gap}px`;
   grid.innerHTML = '';
 
-  const sizeClass = N <= 6 ? '' : N <= 10 ? 'small' : 'tiny';
+  const sizeClass = N <= 5 ? '' : N <= 6 ? 'small' : 'tiny';
 
   G.deck.forEach((card, idx) => {
     const el = document.createElement('div');
@@ -453,7 +450,24 @@ function buildGrid() {
     el.innerHTML = `
       <div class="card-inner">
         <div class="card-face card-back-face">
-          <div class="card-logo">🐾</div>
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+            <defs>
+              <pattern id="pawpat" x="0" y="0" width="25" height="25" patternUnits="userSpaceOnUse">
+                <ellipse cx="12.5" cy="17" rx="5" ry="3.8" fill="rgba(0,229,255,0.14)"/>
+                <ellipse cx="7"  cy="11" rx="2.5" ry="2"   fill="rgba(0,229,255,0.11)"/>
+                <ellipse cx="12.5" cy="9"  rx="2.5" ry="2"   fill="rgba(0,229,255,0.11)"/>
+                <ellipse cx="18" cy="11" rx="2.5" ry="2"   fill="rgba(0,229,255,0.11)"/>
+              </pattern>
+            </defs>
+            <rect width="100" height="100" fill="#0d2040"/>
+            <rect width="100" height="100" fill="url(#pawpat)"/>
+            <rect x="1.5" y="1.5" width="97" height="97" rx="6" fill="none" stroke="rgba(0,229,255,0.18)" stroke-width="1.5"/>
+            <circle cx="50" cy="50" r="18" fill="rgba(0,229,255,0.06)" stroke="rgba(0,229,255,0.18)" stroke-width="1"/>
+            <ellipse cx="50" cy="54" rx="7" ry="5.2"  fill="rgba(0,229,255,0.28)"/>
+            <ellipse cx="41" cy="46" rx="3.5" ry="2.8" fill="rgba(0,229,255,0.22)"/>
+            <ellipse cx="50" cy="43" rx="3.5" ry="2.8" fill="rgba(0,229,255,0.22)"/>
+            <ellipse cx="59" cy="46" rx="3.5" ry="2.8" fill="rgba(0,229,255,0.22)"/>
+          </svg>
         </div>
         <div class="card-face card-front-face" id="front-${idx}"></div>
       </div>`;
@@ -492,8 +506,11 @@ function buildGrid() {
 
 function calcTileSize(N) {
   const vw = Math.min(window.innerWidth, 700) - 24;
-  const gaps = (N - 1) * (N <= 6 ? 6 : N <= 10 ? 5 : 4);
-  return Math.max(N <= 6 ? 60 : N <= 10 ? 44 : 32, Math.floor((vw - gaps) / N));
+  const gap = N <= 6 ? 6 : 5;
+  const gaps = (N - 1) * gap;
+  const computed = Math.floor((vw - gaps) / N);
+  const min = N <= 4 ? 110 : N <= 5 ? 90 : N <= 6 ? 72 : 56;
+  return Math.max(min, computed);
 }
 
 // ══ CARD CLICK ══
