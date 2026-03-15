@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="theme-color" content="#0a1628"/>
+  <title>Brush Timer</title>
+  <link rel="manifest" href="manifest.json"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0a1628;
+      --surface: #111d35;
+      --border: #1e2f4d;
+      --accent: #4fc3f7;
+      --accent2: #00e5ff;
+      --active: #00e5ff;
+      --done: #26a69a;
+      --inactive: #1e2f4d;
+      --text: #e0f7fa;
+      --muted: #546e7a;
+      --glow: 0 0 24px rgba(0,229,255,0.35);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ── Header ── */
+    header {
+      width: 100%;
+      padding: 14px 20px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+    }
+    #settings-btn {
+      background: none; border: 1px solid var(--border);
+      border-radius: 8px; color: var(--muted);
+      padding: 6px 10px; font-size: 0.75rem;
+      font-family: 'DM Mono', monospace; cursor: pointer;
+      transition: all 0.2s;
+    }
+    #settings-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Teeth SVG area ── */
+    #teeth-wrapper {
+      width: 100%;
+      max-width: 360px;
+      padding: 0 16px;
+      flex-shrink: 0;
+    }
+    #teeth-svg { width: 100%; height: auto; display: block; }
+
+    /* quadrant highlight paths */
+    .q { transition: fill 0.4s, filter 0.4s; }
+    .q-inactive { fill: #1a2d4a; filter: none; }
+    .q-active   { fill: #003d52; filter: drop-shadow(0 0 10px var(--active)); }
+    .q-done     { fill: #003030; }
+
+    .tooth { stroke: #1e3a5a; stroke-width: 1; }
+    .tooth-inactive { fill: #e8f4f8; opacity: 0.15; }
+    .tooth-active   { fill: #e0f9ff; opacity: 0.9; }
+    .tooth-done     { fill: #80cbc4; opacity: 0.5; }
+
+    /* ── Quadrant labels ── */
+    .qlabel { font-size: 9px; font-family: 'DM Mono', monospace; fill: var(--muted); transition: fill 0.4s; }
+    .qlabel-active { fill: var(--active); }
+
+    /* ── Timer display ── */
+    #timer-block {
+      text-align: center;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    #timer-display {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(4rem, 18vw, 6rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--accent2);
+      text-shadow: var(--glow);
+      transition: color 0.3s;
+    }
+    #timer-display.warning { color: #ff7043; text-shadow: 0 0 24px rgba(255,112,67,0.5); }
+    #quadrant-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      margin-top: 4px;
+      text-transform: uppercase;
+      min-height: 1.2em;
+    }
+
+    /* ── Progress bar row ── */
+    #progress-row {
+      width: 100%;
+      max-width: 360px;
+      padding: 0 16px;
+      display: flex;
+      gap: 6px;
+    }
+    .seg {
+      flex: 1; height: 5px; border-radius: 3px;
+      background: var(--inactive); transition: background 0.4s;
+      position: relative; overflow: hidden;
+    }
+    .seg.done { background: var(--done); }
+    .seg.active { background: var(--border); }
+    .seg-fill {
+      position: absolute; left: 0; top: 0; height: 100%;
+      background: var(--active); border-radius: 3px;
+      width: 0%; transition: width 0.25s linear;
+    }
+
+    /* ── Controls ── */
+    #controls {
+      width: 100%;
+      max-width: 360px;
+      padding: 0 16px 20px;
+      display: flex;
+      gap: 10px;
+    }
+    .btn {
+      flex: 1; padding: 14px 0;
+      border-radius: 12px; border: none;
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem; font-weight: 700;
+      cursor: pointer; transition: all 0.15s;
+      letter-spacing: 0.05em;
+    }
+    #start-btn {
+      background: var(--accent2);
+      color: #0a1628;
+      box-shadow: 0 0 20px rgba(0,229,255,0.3);
+    }
+    #start-btn:active { transform: scale(0.97); }
+    #start-btn.running { background: #ff7043; box-shadow: 0 0 20px rgba(255,112,67,0.3); }
+    #reset-btn {
+      background: var(--surface);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      flex: 0 0 56px;
+    }
+    #reset-btn:active { transform: scale(0.97); }
+
+    /* ── Settings overlay ── */
+    #settings-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(10,22,40,0.92);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      align-items: center; justify-content: center;
+      flex-direction: column;
+      gap: 20px;
+      padding: 30px;
+    }
+    #settings-overlay.open { display: flex; }
+    #settings-overlay h2 {
+      font-family: 'Syne', sans-serif; font-size: 1.3rem;
+      font-weight: 800; color: var(--accent); letter-spacing: 0.06em;
+    }
+    .setting-row {
+      width: 100%; max-width: 300px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .setting-row label {
+      font-size: 0.7rem; letter-spacing: 0.15em;
+      color: var(--muted); text-transform: uppercase;
+    }
+    .setting-row input[type=range] {
+      width: 100%; accent-color: var(--accent2);
+    }
+    .setting-row .val {
+      font-size: 1.1rem; font-weight: 500; color: var(--accent2);
+      text-align: center;
+    }
+    #save-btn {
+      background: var(--accent2); color: #0a1628;
+      border: none; border-radius: 12px;
+      padding: 14px 40px;
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem; font-weight: 800;
+      cursor: pointer;
+    }
+
+    /* ── Done screen ── */
+    #done-screen {
+      display: none;
+      position: fixed; inset: 0;
+      background: var(--bg);
+      z-index: 200;
+      flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px;
+    }
+    #done-screen.show { display: flex; }
+    #done-screen .emoji { font-size: 4rem; }
+    #done-screen h2 {
+      font-family: 'Syne', sans-serif; font-size: 1.8rem;
+      font-weight: 800; color: var(--accent2);
+      text-shadow: var(--glow);
+    }
+    #done-screen p { color: var(--muted); font-size: 0.8rem; }
+    #done-screen button {
+      margin-top: 10px;
+      background: var(--accent2); color: #0a1628;
+      border: none; border-radius: 12px;
+      padding: 14px 40px;
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem; font-weight: 800; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <h1>🦷 BRUSH TIMER</h1>
+  <button id="settings-btn">⚙ SETTINGS</button>
+</header>
+
+<!-- Teeth SVG -->
+<div id="teeth-wrapper">
+  <svg id="teeth-svg" viewBox="0 0 340 200" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background quadrants -->
+    <rect id="q-ul" class="q q-inactive" x="5"   y="5"   width="155" height="90"  rx="10"/>
+    <rect id="q-ur" class="q q-inactive" x="180" y="5"   width="155" height="90"  rx="10"/>
+    <rect id="q-bl" class="q q-inactive" x="5"   y="105" width="155" height="90"  rx="10"/>
+    <rect id="q-br" class="q q-inactive" x="180" y="105" width="155" height="90"  rx="10"/>
+
+    <!-- Divider lines -->
+    <line x1="170" y1="0" x2="170" y2="200" stroke="#0a1628" stroke-width="10"/>
+    <line x1="0" y1="100" x2="340" y2="100" stroke="#0a1628" stroke-width="10"/>
+
+    <!-- UPPER LEFT teeth (5 teeth) -->
+    <g id="tul">
+      <rect class="tooth tooth-inactive" id="tul1" x="12"  y="20" width="26" height="58" rx="8"/>
+      <rect class="tooth tooth-inactive" id="tul2" x="42"  y="15" width="28" height="63" rx="8"/>
+      <rect class="tooth tooth-inactive" id="tul3" x="74"  y="12" width="26" height="66" rx="8"/>
+      <rect class="tooth tooth-inactive" id="tul4" x="104" y="15" width="24" height="62" rx="8"/>
+      <rect class="tooth tooth-inactive" id="tul5" x="131" y="20" width="22" height="56" rx="8"/>
+    </g>
+
+    <!-- UPPER RIGHT teeth (5 teeth) -->
+    <g id="tur">
+      <rect class="tooth tooth-inactive" id="tur1" x="187" y="20" width="22" height="56" rx="8"/>
+      <rect class="tooth tooth-inactive" id="tur2" x="213" y="15" width="24" height="62" rx="8"/>
+      <rect class="tooth tooth-inactive" id="tur3" x="241" y="12" width="26" height="66" rx="8"/>
+      <rect class="tooth tooth-inactive" id="tur4" x="271" y="15" width="28" height="63" rx="8"/>
+      <rect class="tooth tooth-inactive" id="tur5" x="303" y="20" width="26" height="58" rx="8"/>
+    </g>
+
+    <!-- LOWER LEFT teeth (5 teeth) -->
+    <g id="tbl">
+      <rect class="tooth tooth-inactive" id="tbl1" x="12"  y="122" width="22" height="56" rx="8"/>
+      <rect class="tooth tooth-inactive" id="tbl2" x="38"  y="118" width="24" height="60" rx="8"/>
+      <rect class="tooth tooth-inactive" id="tbl3" x="66"  y="115" width="26" height="64" rx="8"/>
+      <rect class="tooth tooth-inactive" id="tbl4" x="96"  y="118" width="28" height="60" rx="8"/>
+      <rect class="tooth tooth-inactive" id="tbl5" x="128" y="122" width="26" height="56" rx="8"/>
+    </g>
+
+    <!-- LOWER RIGHT teeth (5 teeth) -->
+    <g id="tbr">
+      <rect class="tooth tooth-inactive" id="tbr1" x="187" y="122" width="26" height="56" rx="8"/>
+      <rect class="tooth tooth-inactive" id="tbr2" x="217" y="118" width="28" height="60" rx="8"/>
+      <rect class="tooth tooth-inactive" id="tbr3" x="249" y="115" width="26" height="64" rx="8"/>
+      <rect class="tooth tooth-inactive" id="tbr4" x="279" y="118" width="24" height="60" rx="8"/>
+      <rect class="tooth tooth-inactive" id="tbr5" x="307" y="122" width="22" height="56" rx="8"/>
+    </g>
+
+    <!-- Labels -->
+    <text class="qlabel" id="lbl-ul" x="82"  y="95"  text-anchor="middle">UPPER LEFT</text>
+    <text class="qlabel" id="lbl-ur" x="258" y="95"  text-anchor="middle">UPPER RIGHT</text>
+    <text class="qlabel" id="lbl-bl" x="82"  y="192" text-anchor="middle">LOWER LEFT</text>
+    <text class="qlabel" id="lbl-br" x="258" y="192" text-anchor="middle">LOWER RIGHT</text>
+  </svg>
+</div>
+
+<!-- Timer -->
+<div id="timer-block">
+  <div id="timer-display">0:30</div>
+  <div id="quadrant-label">LOWER LEFT → START</div>
+</div>
+
+<!-- Progress segments -->
+<div id="progress-row">
+  <div class="seg active" id="seg0"><div class="seg-fill" id="fill0"></div></div>
+  <div class="seg" id="seg1"><div class="seg-fill" id="fill1"></div></div>
+  <div class="seg" id="seg2"><div class="seg-fill" id="fill2"></div></div>
+  <div class="seg" id="seg3"><div class="seg-fill" id="fill3"></div></div>
+</div>
+
+<!-- Controls -->
+<div id="controls">
+  <button class="btn" id="start-btn">START</button>
+  <button class="btn" id="reset-btn">↺</button>
+</div>
+
+<!-- Settings overlay -->
+<div id="settings-overlay">
+  <h2>⚙ SETTINGS</h2>
+  <div class="setting-row">
+    <label>Total brushing time</label>
+    <input type="range" id="time-range" min="60" max="300" step="30" value="120"/>
+    <div class="val" id="time-val">2:00 min</div>
+  </div>
+  <button id="save-btn">SAVE</button>
+</div>
+
+<!-- Done screen -->
+<div id="done-screen">
+  <div class="emoji">🦷✨</div>
+  <h2>ALL DONE!</h2>
+  <p>Great job brushing all four quadrants!</p>
+  <button onclick="resetAll()">BRUSH AGAIN</button>
+</div>
+
+<script>
+  // ── State ──
+  const QUADRANTS = [
+    { id: 'bl', name: 'LOWER LEFT',  bg: 'q-bl', teeth: ['tbl1','tbl2','tbl3','tbl4','tbl5'], lbl: 'lbl-bl' },
+    { id: 'br', name: 'LOWER RIGHT', bg: 'q-br', teeth: ['tbr1','tbr2','tbr3','tbr4','tbr5'], lbl: 'lbl-br' },
+    { id: 'ul', name: 'UPPER LEFT',  bg: 'q-ul', teeth: ['tul1','tul2','tul3','tul4','tul5'], lbl: 'lbl-ul' },
+    { id: 'ur', name: 'UPPER RIGHT', bg: 'q-ur', teeth: ['tur1','tur2','tur3','tur4','tur5'], lbl: 'lbl-ur' },
+  ];
+
+  let totalSeconds = 120;
+  let perQ = 30;
+  let currentQ = 0;
+  let secondsLeft = 30;
+  let running = false;
+  let timer = null;
+  let audioCtx = null;
+
+  // ── Audio ──
+  function getAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return audioCtx;
+  }
+
+  function playBeep(freq = 880, duration = 0.18, type = 'sine', vol = 0.5) {
+    try {
+      const ctx = getAudio();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = type; osc.frequency.value = freq;
+      gain.gain.setValueAtTime(vol, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+      osc.start(); osc.stop(ctx.currentTime + duration);
+    } catch(e) {}
+  }
+
+  function playSwitch() {
+    // Two-tone chime
+    playBeep(660, 0.15, 'sine', 0.4);
+    setTimeout(() => playBeep(880, 0.2, 'sine', 0.5), 160);
+  }
+
+  function playDone() {
+    playBeep(660, 0.15, 'sine', 0.4);
+    setTimeout(() => playBeep(880, 0.15, 'sine', 0.4), 150);
+    setTimeout(() => playBeep(1100, 0.3, 'sine', 0.5), 300);
+  }
+
+  // ── UI helpers ──
+  function pad(n) { return String(n).padStart(2,'0'); }
+  function fmtTime(s) { return `${Math.floor(s/60)}:${pad(s%60)}`; }
+
+  function setQuadrantVisual(idx, state) {
+    const q = QUADRANTS[idx];
+    // background rect
+    const rect = document.getElementById('q-' + q.id);
+    rect.className.baseVal = 'q q-' + state;
+    // teeth
+    q.teeth.forEach(tid => {
+      const t = document.getElementById(tid);
+      t.className.baseVal = 'tooth tooth-' + state;
+    });
+    // label
+    const lbl = document.getElementById(q.lbl);
+    lbl.className.baseVal = state === 'active' ? 'qlabel qlabel-active' : 'qlabel';
+  }
+
+  function updateTeeth() {
+    QUADRANTS.forEach((_, i) => {
+      if (i < currentQ) setQuadrantVisual(i, 'done');
+      else if (i === currentQ) setQuadrantVisual(i, 'active');
+      else setQuadrantVisual(i, 'inactive');
+    });
+  }
+
+  function updateSegs() {
+    QUADRANTS.forEach((_, i) => {
+      const seg = document.getElementById('seg' + i);
+      const fill = document.getElementById('fill' + i);
+      seg.className = 'seg';
+      fill.style.width = '0%';
+      if (i < currentQ) {
+        seg.classList.add('done');
+        fill.style.width = '100%';
+      } else if (i === currentQ) {
+        seg.classList.add('active');
+        const pct = ((perQ - secondsLeft) / perQ) * 100;
+        fill.style.width = pct + '%';
+      }
+    });
+  }
+
+  function updateDisplay() {
+    const disp = document.getElementById('timer-display');
+    disp.textContent = fmtTime(secondsLeft);
+    disp.className = secondsLeft <= 5 ? 'warning' : '';
+    document.getElementById('quadrant-label').textContent = QUADRANTS[currentQ].name;
+    updateSegs();
+    updateTeeth();
+  }
+
+  // ── Timer logic ──
+  function tick() {
+    secondsLeft--;
+    if (secondsLeft <= 0) {
+      // move to next quadrant
+      currentQ++;
+      if (currentQ >= QUADRANTS.length) {
+        finishAll();
+        return;
+      }
+      playSwitch();
+      secondsLeft = perQ;
+    }
+    updateDisplay();
+  }
+
+  function startStop() {
+    if (running) {
+      clearInterval(timer);
+      running = false;
+      document.getElementById('start-btn').textContent = 'RESUME';
+      document.getElementById('start-btn').classList.remove('running');
+    } else {
+      getAudio(); // unlock audio context on user gesture
+      running = true;
+      document.getElementById('start-btn').textContent = 'PAUSE';
+      document.getElementById('start-btn').classList.add('running');
+      timer = setInterval(tick, 1000);
+    }
+  }
+
+  function resetAll() {
+    clearInterval(timer);
+    running = false;
+    currentQ = 0;
+    secondsLeft = perQ;
+    document.getElementById('start-btn').textContent = 'START';
+    document.getElementById('start-btn').classList.remove('running');
+    document.getElementById('done-screen').classList.remove('show');
+    updateDisplay();
+  }
+
+  function finishAll() {
+    clearInterval(timer);
+    running = false;
+    playDone();
+    // mark all done
+    QUADRANTS.forEach((_, i) => setQuadrantVisual(i, 'done'));
+    document.getElementById('seg3').classList.remove('active');
+    document.getElementById('seg3').classList.add('done');
+    document.getElementById('fill3').style.width = '100%';
+    setTimeout(() => {
+      document.getElementById('done-screen').classList.add('show');
+    }, 600);
+  }
+
+  // ── Settings ──
+  const timeRange = document.getElementById('time-range');
+  const timeVal = document.getElementById('time-val');
+  timeRange.addEventListener('input', () => {
+    const v = parseInt(timeRange.value);
+    timeVal.textContent = fmtTime(v) + ' min';
+  });
+
+  document.getElementById('settings-btn').addEventListener('click', () => {
+    timeRange.value = totalSeconds;
+    timeVal.textContent = fmtTime(totalSeconds) + ' min';
+    document.getElementById('settings-overlay').classList.add('open');
+  });
+
+  document.getElementById('save-btn').addEventListener('click', () => {
+    totalSeconds = parseInt(timeRange.value);
+    perQ = Math.round(totalSeconds / 4);
+    document.getElementById('settings-overlay').classList.remove('open');
+    resetAll();
+  });
+
+  document.getElementById('settings-overlay').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('settings-overlay')) {
+      document.getElementById('settings-overlay').classList.remove('open');
+    }
+  });
+
+  // ── Buttons ──
+  document.getElementById('start-btn').addEventListener('click', startStop);
+  document.getElementById('reset-btn').addEventListener('click', resetAll);
+
+  // ── Init ──
+  updateDisplay();
+</script>
+</body>
+</html>
